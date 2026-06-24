@@ -48,10 +48,12 @@ import {
   type FetchedModel,
 } from "@/lib/api/model-fetch";
 import { CustomUserAgentField } from "./CustomUserAgentField";
+import { ModelApiOverridesEditor } from "./ModelApiOverridesEditor";
 import type {
   ProviderCategory,
   ClaudeApiFormat,
   ClaudeApiKeyField,
+  ModelApiOverride,
 } from "@/types";
 import {
   hasClaudeOneMMarker,
@@ -134,6 +136,10 @@ interface ClaudeFormFieldsProps {
   apiFormat: ClaudeApiFormat;
   onApiFormatChange: (format: ClaudeApiFormat) => void;
 
+  // Per-model API format / Base URL overrides
+  modelApiOverrides?: Record<string, ModelApiOverride>;
+  onModelApiOverridesChange?: (overrides: Record<string, ModelApiOverride>) => void;
+
   // Auth Field (ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY)
   apiKeyField: ClaudeApiKeyField;
   onApiKeyFieldChange: (field: ClaudeApiKeyField) => void;
@@ -195,6 +201,8 @@ export function ClaudeFormFields({
   speedTestEndpoints,
   apiFormat,
   onApiFormatChange,
+  modelApiOverrides = {},
+  onModelApiOverridesChange = () => {},
   apiKeyField,
   onApiKeyFieldChange,
   isFullUrl,
@@ -572,6 +580,9 @@ export function ClaudeFormFields({
     handleRoleModelChange(row, setClaudeOneMMarker(row.model, enabled));
   };
 
+  const showModelApiFormats =
+    category !== "official" && category !== "cloud_provider";
+
   return (
     <>
       {/* GitHub Copilot OAuth 认证 */}
@@ -672,6 +683,53 @@ export function ClaudeFormFields({
         />
       )}
 
+      {showModelApiFormats && (
+        <ModelApiOverridesEditor
+          overrides={modelApiOverrides}
+          onChange={onModelApiOverridesChange}
+          defaultApiFormat={apiFormat}
+          baseUrlPlaceholder={baseUrl}
+        >
+          <div className="rounded-md border bg-background/70 p-3 space-y-2">
+            <FormLabel htmlFor="apiFormat">
+              {t("providerForm.apiFormat", { defaultValue: "默认协议" })}
+            </FormLabel>
+            <Select value={apiFormat} onValueChange={onApiFormatChange}>
+              <SelectTrigger id="apiFormat">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="anthropic">
+                  {t("providerForm.apiFormatAnthropic", {
+                    defaultValue: "Anthropic Messages (原生)",
+                  })}
+                </SelectItem>
+                <SelectItem value="openai_chat">
+                  {t("providerForm.apiFormatOpenAIChat", {
+                    defaultValue: "OpenAI Chat Completions (需转换)",
+                  })}
+                </SelectItem>
+                <SelectItem value="openai_responses">
+                  {t("providerForm.apiFormatOpenAIResponses", {
+                    defaultValue: "OpenAI Responses API (需转换)",
+                  })}
+                </SelectItem>
+                <SelectItem value="gemini_native">
+                  {t("providerForm.apiFormatGeminiNative", {
+                    defaultValue: "Gemini Native generateContent (需转换)",
+                  })}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {t("providerForm.apiFormatHint", {
+                defaultValue: "未命中下方规则时使用的协议",
+              })}
+            </p>
+          </div>
+        </ModelApiOverridesEditor>
+      )}
+
       {/* 端点测速弹窗 */}
       {shouldShowSpeedTest && showEndpointTools && isEndpointModalOpen && (
         <EndpointSpeedTest
@@ -711,47 +769,6 @@ export function ClaudeFormFields({
             </p>
           )}
           <CollapsibleContent className="space-y-4 pt-2">
-            {/* API 格式选择（仅非云服务商显示） */}
-            {category !== "cloud_provider" && (
-              <div className="space-y-2">
-                <FormLabel htmlFor="apiFormat">
-                  {t("providerForm.apiFormat", { defaultValue: "API 格式" })}
-                </FormLabel>
-                <Select value={apiFormat} onValueChange={onApiFormatChange}>
-                  <SelectTrigger id="apiFormat" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="anthropic">
-                      {t("providerForm.apiFormatAnthropic", {
-                        defaultValue: "Anthropic Messages (原生)",
-                      })}
-                    </SelectItem>
-                    <SelectItem value="openai_chat">
-                      {t("providerForm.apiFormatOpenAIChat", {
-                        defaultValue: "OpenAI Chat Completions (需转换)",
-                      })}
-                    </SelectItem>
-                    <SelectItem value="openai_responses">
-                      {t("providerForm.apiFormatOpenAIResponses", {
-                        defaultValue: "OpenAI Responses API (需转换)",
-                      })}
-                    </SelectItem>
-                    <SelectItem value="gemini_native">
-                      {t("providerForm.apiFormatGeminiNative", {
-                        defaultValue: "Gemini Native generateContent (需转换)",
-                      })}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {t("providerForm.apiFormatHint", {
-                    defaultValue: "选择供应商 API 的输入格式",
-                  })}
-                </p>
-              </div>
-            )}
-
             {/* 认证字段选择器 */}
             <div className="space-y-2">
               <FormLabel>

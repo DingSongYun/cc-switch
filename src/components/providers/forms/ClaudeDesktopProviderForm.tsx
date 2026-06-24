@@ -41,11 +41,13 @@ import { CodexOAuthSection } from "./CodexOAuthSection";
 import { CopilotAuthSection } from "./CopilotAuthSection";
 import { EndpointField } from "./shared/EndpointField";
 import { ModelDropdown } from "./shared/ModelDropdown";
+import { ModelApiOverridesEditor } from "./ModelApiOverridesEditor";
 import { ProviderPresetSelector } from "./ProviderPresetSelector";
 import { providerSchema, type ProviderFormData } from "@/lib/schemas/provider";
 import type {
   ClaudeApiFormat,
   ClaudeDesktopModelRoute,
+  ModelApiOverride,
   ProviderCategory,
   ProviderMeta,
 } from "@/types";
@@ -260,6 +262,18 @@ export function ClaudeDesktopProviderForm({
   const [apiFormat, setApiFormat] = useState<ClaudeApiFormat>(
     initialData?.meta?.apiFormat ?? "anthropic",
   );
+  const [modelApiOverrides, setModelApiOverrides] = useState<
+    Record<string, ModelApiOverride>
+  >(() => {
+    if (initialData?.meta?.modelApiOverrides) {
+      return initialData.meta.modelApiOverrides;
+    }
+    return Object.fromEntries(
+      Object.entries(initialData?.meta?.modelApiFormats ?? {}).map(
+        ([pattern, apiFormat]) => [pattern, { apiFormat }],
+      ),
+    );
+  });
   const [baseUrl, setBaseUrl] = useState(
     envString(initialData?.settingsConfig, "ANTHROPIC_BASE_URL"),
   );
@@ -394,6 +408,7 @@ export function ClaudeDesktopProviderForm({
     setApiKey("");
     setApiKeyField(preset.apiKeyField ?? "ANTHROPIC_AUTH_TOKEN");
     setApiFormat(preset.apiFormat ?? "anthropic");
+    setModelApiOverrides({});
 
     didSeedDefaultRoutes.current = true;
     setMode(preset.mode);
@@ -425,6 +440,7 @@ export function ClaudeDesktopProviderForm({
       setApiKey("");
       setApiKeyField("ANTHROPIC_AUTH_TOKEN");
       setApiFormat("anthropic");
+      setModelApiOverrides({});
       didSeedDefaultRoutes.current = false;
       setMode("direct");
       setRoutes([]);
@@ -537,6 +553,8 @@ export function ClaudeDesktopProviderForm({
       delete meta.claudeDesktopMode;
       delete meta.claudeDesktopModelRoutes;
       delete meta.apiFormat;
+      delete meta.modelApiFormats;
+      delete meta.modelApiOverrides;
       delete meta.endpointAutoSelect;
       delete meta.isFullUrl;
       await onSubmit({
@@ -644,6 +662,24 @@ export function ClaudeDesktopProviderForm({
       };
       return acc;
     }, {});
+    const cleanedModelApiOverrides = Object.fromEntries(
+      Object.entries(modelApiOverrides)
+        .map(([pattern, override]) => {
+          const apiFormat = override.apiFormat;
+          const baseUrl = override.baseUrl?.trim();
+          return [
+            pattern.trim(),
+            {
+              ...(apiFormat ? { apiFormat } : {}),
+              ...(baseUrl ? { baseUrl } : {}),
+            },
+          ] as const;
+        })
+        .filter(
+          ([pattern, override]) =>
+            pattern.length > 0 && (override.apiFormat || override.baseUrl),
+        ),
+    );
 
     const meta: ProviderMeta = {
       ...(initialData?.meta ?? {}),
@@ -652,6 +688,12 @@ export function ClaudeDesktopProviderForm({
     };
 
     meta.claudeDesktopModelRoutes = routeMap;
+    delete meta.modelApiFormats;
+    if (mode === "proxy" && Object.keys(cleanedModelApiOverrides).length > 0) {
+      meta.modelApiOverrides = cleanedModelApiOverrides;
+    } else {
+      delete meta.modelApiOverrides;
+    }
     meta.providerType = activeProviderType;
     meta.authBinding =
       activeProviderType === "github_copilot"
@@ -865,6 +907,13 @@ export function ClaudeDesktopProviderForm({
                     </SelectContent>
                   </Select>
                 </div>
+
+                <ModelApiOverridesEditor
+                  overrides={modelApiOverrides}
+                  onChange={setModelApiOverrides}
+                  defaultApiFormat={apiFormat}
+                  baseUrlPlaceholder={baseUrl}
+                />
 
                 <div className="space-y-3">
                   <div className="space-y-1 border-t border-border-default pt-4">
