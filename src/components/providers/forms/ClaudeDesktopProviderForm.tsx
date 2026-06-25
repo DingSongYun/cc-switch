@@ -102,6 +102,7 @@ export interface ClaudeDesktopProviderFormProps {
     iconColor?: string;
   };
   showButtons?: boolean;
+  readOnlyTeamFields?: boolean;
 }
 
 type RouteRow = {
@@ -254,6 +255,7 @@ export function ClaudeDesktopProviderForm({
   onSubmittingChange,
   initialData,
   showButtons = true,
+  readOnlyTeamFields = false,
 }: ClaudeDesktopProviderFormProps) {
   const { t } = useTranslation();
   const initialMode = initialData?.meta?.claudeDesktopMode ?? "direct";
@@ -737,7 +739,7 @@ export function ClaudeDesktopProviderForm({
           variant="outline"
           size="sm"
           onClick={handleFetchModels}
-          disabled={isFetchingModels}
+          disabled={isFetchingModels || readOnlyTeamFields}
           className="h-7 gap-1"
         >
           {isFetchingModels ? (
@@ -753,6 +755,7 @@ export function ClaudeDesktopProviderForm({
         variant="outline"
         size="sm"
         onClick={onAdd}
+        disabled={readOnlyTeamFields}
         className="h-7 gap-1"
       >
         <Plus className="h-3.5 w-3.5" />
@@ -825,6 +828,7 @@ export function ClaudeDesktopProviderForm({
               value={baseUrl}
               onChange={(v) => setBaseUrl(v)}
               placeholder={t("providerForm.apiEndpointPlaceholder")}
+              disabled={readOnlyTeamFields}
               hint={
                 needsModelMapping && apiFormat === "openai_responses"
                   ? t("providerForm.apiHintResponses")
@@ -860,6 +864,7 @@ export function ClaudeDesktopProviderForm({
                 <Switch
                   checked={needsModelMapping}
                   onCheckedChange={handleModelMappingChange}
+                  disabled={readOnlyTeamFields}
                   aria-label={t("claudeDesktop.modelMappingToggle", {
                     defaultValue: "需要模型映射",
                   })}
@@ -878,6 +883,7 @@ export function ClaudeDesktopProviderForm({
                     onValueChange={(value) =>
                       setApiFormat(value as ClaudeApiFormat)
                     }
+                    disabled={readOnlyTeamFields}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -913,6 +919,7 @@ export function ClaudeDesktopProviderForm({
                   onChange={setModelApiOverrides}
                   defaultApiFormat={apiFormat}
                   baseUrlPlaceholder={baseUrl}
+                  disabled={readOnlyTeamFields}
                 />
 
                 <div className="space-y-3">
@@ -929,7 +936,7 @@ export function ClaudeDesktopProviderForm({
                           variant="outline"
                           size="sm"
                           onClick={handleFetchModels}
-                          disabled={isFetchingModels}
+                          disabled={isFetchingModels || readOnlyTeamFields}
                           className="h-7 gap-1"
                         >
                           {isFetchingModels ? (
@@ -1016,6 +1023,7 @@ export function ClaudeDesktopProviderForm({
                             })
                           }
                           placeholder={labelPlaceholder}
+                          disabled={readOnlyTeamFields}
                         />
                         <div className="flex gap-1">
                           <Input
@@ -1025,8 +1033,9 @@ export function ClaudeDesktopProviderForm({
                             }
                             placeholder={modelPlaceholder}
                             className="flex-1"
+                            disabled={readOnlyTeamFields}
                           />
-                          {fetchedModels.length > 0 && (
+                          {fetchedModels.length > 0 && !readOnlyTeamFields && (
                             <ModelDropdown
                               models={fetchedModels}
                               onSelect={(id) =>
@@ -1046,6 +1055,7 @@ export function ClaudeDesktopProviderForm({
                                 supports1m: checked === true,
                               })
                             }
+                            disabled={readOnlyTeamFields}
                           />
                           {t("claudeDesktop.supports1mShort", {
                             defaultValue: "1M",
@@ -1132,15 +1142,17 @@ export function ClaudeDesktopProviderForm({
                                 }
                                 placeholder="claude-sonnet-4-6"
                                 className="flex-1"
+                                disabled={readOnlyTeamFields}
                               />
-                              {fetchedModels.length > 0 && (
-                                <ModelDropdown
-                                  models={fetchedModels}
-                                  onSelect={(id) =>
-                                    updateRoute(index, { route: id })
-                                  }
-                                />
-                              )}
+                              {fetchedModels.length > 0 &&
+                                !readOnlyTeamFields && (
+                                  <ModelDropdown
+                                    models={fetchedModels}
+                                    onSelect={(id) =>
+                                      updateRoute(index, { route: id })
+                                    }
+                                  />
+                                )}
                             </div>
                             <label className="flex h-9 items-center gap-2 text-sm text-muted-foreground">
                               <Checkbox
@@ -1150,6 +1162,7 @@ export function ClaudeDesktopProviderForm({
                                     supports1m: checked === true,
                                   })
                                 }
+                                disabled={readOnlyTeamFields}
                               />
                               {t("claudeDesktop.supports1mShort", {
                                 defaultValue: "1M",
@@ -1164,6 +1177,7 @@ export function ClaudeDesktopProviderForm({
                                   current.filter((_, i) => i !== index),
                                 )
                               }
+                              disabled={readOnlyTeamFields}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { providerSchema, type ProviderFormData } from "@/lib/schemas/provider";
 import { providersApi, settingsApi, type AppId } from "@/lib/api";
 import type {
+  Provider,
   ProviderCategory,
   ProviderMeta,
   ProviderTestConfig,
@@ -20,6 +21,7 @@ import type {
   ClaudeApiKeyField,
   ModelApiOverride,
 } from "@/types";
+import { isTeamManagedReadOnly } from "@/utils/teamProviderUtils";
 import {
   providerPresets,
   type ProviderPreset,
@@ -236,7 +238,15 @@ export interface ProviderFormProps {
 
 export function ProviderForm(props: ProviderFormProps) {
   if (props.appId === "claude-desktop") {
-    return <ClaudeDesktopProviderForm {...props} />;
+    const teamManagedReadOnly = isTeamManagedReadOnly(
+      props.initialData as Provider | undefined,
+    );
+    return (
+      <ClaudeDesktopProviderForm
+        {...props}
+        readOnlyTeamFields={teamManagedReadOnly}
+      />
+    );
   }
 
   return <ProviderFormFull {...props} />;
@@ -261,6 +271,9 @@ function ProviderFormFull({
 
   const { t } = useTranslation();
   const isEditMode = Boolean(initialData);
+  const teamManagedReadOnly = isTeamManagedReadOnly(
+    initialData as Provider | undefined,
+  );
   const queryClient = useQueryClient();
   const { data: settingsData } = useSettingsQuery();
   const showCommonConfigNotice =
@@ -2079,6 +2092,7 @@ function ProviderFormFull({
               onFullUrlChange={setLocalIsFullUrl}
               customUserAgent={customUserAgent}
               onCustomUserAgentChange={setCustomUserAgent}
+              readOnlyTeamFields={teamManagedReadOnly}
             />
           )}
 
@@ -2113,6 +2127,7 @@ function ProviderFormFull({
               speedTestEndpoints={speedTestEndpoints}
               customUserAgent={customUserAgent}
               onCustomUserAgentChange={setCustomUserAgent}
+              readOnlyTeamFields={teamManagedReadOnly}
             />
           )}
 
@@ -2142,6 +2157,7 @@ function ProviderFormFull({
               model={geminiModel}
               onModelChange={handleGeminiModelChange}
               speedTestEndpoints={speedTestEndpoints}
+              readOnlyTeamFields={teamManagedReadOnly}
             />
           )}
 

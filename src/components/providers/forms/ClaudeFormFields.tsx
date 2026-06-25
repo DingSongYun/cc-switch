@@ -151,6 +151,9 @@ interface ClaudeFormFieldsProps {
   // Local proxy User-Agent override
   customUserAgent: string;
   onCustomUserAgentChange: (value: string) => void;
+
+  // Team-managed read-only fields (API key stays editable)
+  readOnlyTeamFields?: boolean;
 }
 
 export function ClaudeFormFields({
@@ -209,6 +212,7 @@ export function ClaudeFormFields({
   onFullUrlChange,
   customUserAgent,
   onCustomUserAgentChange,
+  readOnlyTeamFields = false,
 }: ClaudeFormFieldsProps) {
   const { t } = useTranslation();
   const hasAnyAdvancedValue = !!(
@@ -660,7 +664,9 @@ export function ClaudeFormFields({
           onChange={onBaseUrlChange}
           placeholder={t("providerForm.apiEndpointPlaceholder")}
           hint={
-            apiFormat === "openai_responses"
+            readOnlyTeamFields
+              ? t("teamProvider.readOnlyFieldHint")
+              : apiFormat === "openai_responses"
               ? t("providerForm.apiHintResponses")
               : apiFormat === "openai_chat"
                 ? t("providerForm.apiHintOAI")
@@ -673,13 +679,16 @@ export function ClaudeFormFields({
               ? t("providerForm.fullUrlHintGeminiNative")
               : undefined
           }
-          showManageButton={showEndpointTools}
+          showManageButton={showEndpointTools && !readOnlyTeamFields}
           onManageClick={
-            showEndpointTools ? () => onEndpointModalToggle(true) : undefined
+            showEndpointTools && !readOnlyTeamFields
+              ? () => onEndpointModalToggle(true)
+              : undefined
           }
-          showFullUrlToggle={showEndpointTools}
+          showFullUrlToggle={showEndpointTools && !readOnlyTeamFields}
           isFullUrl={isFullUrl}
-          onFullUrlChange={onFullUrlChange}
+          onFullUrlChange={readOnlyTeamFields ? undefined : onFullUrlChange}
+          disabled={readOnlyTeamFields}
         />
       )}
 
